@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Simulator Deluxe</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      background: #05070d;
+      color: white;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      background:
+        radial-gradient(circle at top, rgba(59,130,246,0.25), transparent 35%),
+        linear-gradient(rgba(4,8,18,0.88), rgba(2,6,14,0.94));
+      padding: 20px;
+    }
+
+    .menu {
+      width: min(1100px, 96vw);
+      background: rgba(12, 18, 30, 0.95);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+      backdrop-filter: blur(8px);
+    }
+
+    .title {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #cbd5e1;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 26px;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .choice {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .choice:hover {
+      transform: translateY(-5px);
+      border-color: rgba(96,165,250,0.7);
+      box-shadow: 0 10px 30px rgba(37,99,235,0.12);
+    }
+
+    .choice.selected {
+      border-color: #22c55e;
+      background: linear-gradient(180deg, rgba(34,197,94,0.12), rgba(255,255,255,0.03));
+      box-shadow: 0 0 0 2px rgba(34,197,94,0.15) inset, 0 10px 30px rgba(34,197,94,0.12);
+    }
+
+    .plane-preview {
+      width: 100%;
+      height: 120px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+      background:
+        radial-gradient(circle at 75% 20%, rgba(255,255,255,0.35), transparent 18%),
+        linear-gradient(#74c0fc, #bfe7ff 62%, #d0b084 62%, #8c6239 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plane-preview svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .choice h3 {
+      font-size: 1.18rem;
+      margin-bottom: 8px;
+    }
+
+    .choice p {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .stats {
+      color: #93c5fd;
+      font-size: 0.92rem;
+    }
+
+    .controls-box {
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 16px;
+      color: #e2e8f0;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .controls-box strong {
+      color: #ffffff;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 6px 18px;
+    }
+
+    .start-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 10px 24px rgba(34,197,94,0.25);
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    .hud {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 5;
+      min-width: 290px;
+      background: rgba(6, 12, 24, 0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 14px 16px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .hud h4 {
+      color: #93c5fd;
+      margin-bottom: 8px;
+      font-size: 1rem;
+      letter-spacing: 0.4px;
+    }
+
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .bottom-help {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 16px;
+      z-index: 5;
+      background: rgba(6, 12, 24, 0.62);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+    }
+
+    .warning {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      display: none;
+      background: rgba(220,38,38,0.9);
+      color: white;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-weight: bold;
+      box-shadow: 0 10px 25px rgba(220,38,38,0.25);
+    }
+
+    .crosshair {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0.72;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 8px rgba(255,255,255,0.18);
+    }
+
+    .crosshair::before {
+      left: 0;
+      top: 13px;
+      width: 28px;
+      height: 2px;
+    }
+
+    .crosshair::after {
+      left: 13px;
+      top: 0;
+      width: 2px;
+      height: 28px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="startScreen" class="overlay">
+    <div class="menu">
+      <div class="title">Flight Simulator Deluxe</div>
+      <div class="subtitle">
+        Pick an aircraft, start the engine, and fly.<br />
+        Now with <strong>climb and descend controls</strong> plus more detailed aircraft models.
+      </div>
+
+      <div class="choices">
+        <div class="choice selected" data-plane="jet">
+          <div class="plane-preview">
+            <svg viewBox="0 0 300 120">
+              <ellipse cx="48" cy="30" rx="26" ry="10" fill="rgba(255,255,255,0.7)"/>
+              <ellipse cx="80" cy="26" rx="20" ry="8" fill="rgba(255,255,255,0.55)"/>
+              <polygon points="150,18 140,54 90,60 120,52 118,65 98,72 135,68 147,102 153,102 165,68 202,72 182,65 180,52 210,60 160,54"
+                       fill="#dbeafe" stroke="#8ec5ff" stroke-width="2"/>
+              <polygon points="150,12 145,18 155,18" fill="#f8fafc"/>
+              <rect x="147" y="102" width="6" height="10" fill="#cbd5e1"/>
+            </svg>
+          </div>
+          <h3>Trainer Jet</h3>
+          <p>Fast acceleration, sharp turns, aggressive performance.</p>
+          <div class="stats">Speed: High • Handling: Sharp • Climb: Strong</div>
+        </div>
+
+        <div class="choice" data-plane="prop">
+          <div class="plane-preview">
+            <svg viewBox="0 0 300 120">
+              <ellipse cx="62" cy="32" rx="26" ry="10" fill="rgba(255,255,255,0.7)"/>
+              <ellipse cx="92" cy="26" rx="16" ry="8" fill="rgba(255,255,255,0.5)"/>
+              <polygon points="150,16 138,48 70,55 125,51 121,66 92,72 136,69 146,102 154,102 164,69 208,72 179,66 175,51 230,55 162,48"
+                       fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+              <line x1="150" y1="8" x2="150" y2="22" stroke="#ffffff" stroke-width="3"/>
+              <line x1="142" y1="15" x2="158" y2="15" stroke="#ffffff" stroke-width="3"/>
+            </svg>
+          </div>
+          <h3>Prop Plane</h3>
+          <p>Balanced speed, reliable turning, easy to control.</p>
+          <div class="stats">Speed: Medium • Handling: Balanced • Climb: Good</div>
+        </div>
+
+        <div class="choice" data-plane="glider">
+          <div class="plane-preview">
+            <svg viewBox="0 0 300 120">
+              <ellipse cx="54" cy="30" rx="28" ry="10" fill="rgba(255,255,255,0.7)"/>
+              <ellipse cx="90" cy="26" rx="16" ry="7" fill="rgba(255,255,255,0.48)"/>
+              <polygon points="150,20 145,48 15,56 125,54 121,66 90,71 139,69 146,103 154,103 161,69 210,71 179,66 175,54 285,56 155,48"
+                       fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>Glider</h3>
+          <p>Smooth and elegant, slower speed, excellent glide.</p>
+          <div class="stats">Speed: Low • Handling: Gentle • Glide: Excellent</div>
+        </div>
+      </div>
+
+      <div class="controls-box">
+        <strong>Controls</strong>
+        <div class="controls-grid">
+          <div>W = Forward / Throttle</div>
+          <div>A = Turn Left</div>
+          <div>D = Turn Right</div>
+          <div>Q = Raise Altitude / Climb</div>
+          <div>S = Lower Altitude / Descend</div>
+          <div>E = Engine Start / Stop</div>
+        </div>
+      </div>
+
+      <div class="start-row">
+        <button class="start-btn" id="startBtn">Start Flight</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="hud" class="hud hidden">
+    <h4>Flight HUD</h4>
+    <div class="hud-row"><span>Aircraft:</span><span id="hudAircraft">-</span></div>
+    <div class="hud-row"><span>Engine:</span><span id="hudEngine">OFF</span></div>
+    <div class="hud-row"><span>Speed:</span><span id="hudSpeed">0</span></div>
+    <div class="hud-row"><span>Altitude:</span><span id="hudAltitude">0 ft</span></div>
+    <div class="hud-row"><span>Heading:</span><span id="hudHeading">0°</span></div>
+    <div class="hud-row"><span>Pitch:</span><span id="hudPitch">0°</span></div>
+  </div>
+
+  <div id="help" class="bottom-help hidden">
+    Controls: <strong>W</strong> Forward | <strong>A</strong> Left | <strong>D</strong> Right |
+    <strong>Q</strong> Climb | <strong>S</strong> Descend | <strong>E</strong> Engine
+  </div>
+
+  <div id="warning" class="warning">WARNING: LOW ALTITUDE</div>
+  <div id="crosshair" class="crosshair hidden"></div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const startScreen = document.getElementById("startScreen");
+    const startBtn = document.getElementById("startBtn");
+    const choiceCards = [...document.querySelectorAll(".choice")];
+
+    const hud = document.getElementById("hud");
+    const help = document.getElementById("help");
+    const warning = document.getElementById("warning");
+    const crosshair = document.getElementById("crosshair");
+
+    const hudAircraft = document.getElementById("hudAircraft");
+    const hudEngine = document.getElementById("hudEngine");
+    const hudSpeed = document.getElementById("hudSpeed");
+    const hudAltitude = document.getElementById("hudAltitude");
+    const hudHeading = document.getElementById("hudHeading");
+    const hudPitch = document.getElementById("hudPitch");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    const planes = {
+      jet: {
+        name: "Trainer Jet",
+        color: "#60a5fa",
+        accel: 0.16,
+        drag: 0.03,
+        maxSpeed: 20,
+        turnRate: 2.2,
+        climbRate: 8.5,
+        descendRate: 9,
+        glideLoss: 0.35,
+        lift: 0.18,
+        stall: 3.5
+      },
+      prop: {
+        name: "Prop Plane",
+        color: "#f59e0b",
+        accel: 0.11,
+        drag: 0.025,
+        maxSpeed: 14,
+        turnRate: 1.45,
+        climbRate: 6.7,
+        descendRate: 7.2,
+        glideLoss: 0.22,
+        lift: 0.12,
+        stall: 2.5
+      },
+      glider: {
+        name: "Glider",
+        color: "#22c55e",
+        accel: 0.06,
+        drag: 0.014,
+        maxSpeed: 10,
+        turnRate: 1.0,
+        climbRate: 4.8,
+        descendRate: 5.5,
+        glideLoss: 0.09,
+        lift: 0.08,
+        stall: 1.2
+      }
+    };
+
+    let selectedPlane = "jet";
+    let running = false;
+    let engineOn = false;
+
+    const keys = {
+      w: false,
+      a: false,
+      d: false,
+      q: false,
+      s: false
+    };
+
+    const world = {
+      heading: 0,
+      speed: 0,
+      altitude: 1900,
+      pitch: 0,
+      roll: 0,
+      xOffset: 0,
+      yOffset: 0,
+      frame: 0
+    };
+
+    const clouds = Array.from({ length: 20 }, () => ({
+      x: Math.random() * 3200 - 1600,
+      y: Math.random() * 180 + 40,
+      size: 50 + Math.random() * 110,
+      phase: Math.random() * Math.PI * 2,
+      drift: 0.3 + Math.random() * 0.4
+    }));
+
+    choiceCards.forEach(card => {
+      card.addEventListener("click", () => {
+        choiceCards.forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedPlane = card.dataset.plane;
+      });
+    });
+
+    startBtn.addEventListener("click", () => {
+      resetFlight();
+      running = true;
+      startScreen.classList.add("hidden");
+      hud.classList.remove("hidden");
+      help.classList.remove("hidden");
+      crosshair.classList.remove("hidden");
+    });
+
+    function resetFlight() {
+      engineOn = false;
+      world.heading = 0;
+      world.speed = 0;
+      world.altitude = 1900;
+      world.pitch = 0;
+      world.roll = 0;
+      world.xOffset = 0;
+      world.yOffset = 0;
+      world.frame = 0;
+      warning.style.display = "none";
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      if (k in keys) keys[k] = true;
+
+      if (k === "e" && !e.repeat && running) {
+        engineOn = !engineOn;
+      }
+
+      if (["w","a","d","q","s","e"," "].includes(k)) {
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      const k = e.key.toLowerCase();
+      if (k in keys) keys[k] = false;
+    });
+
+    function update() {
+      if (!running) return;
+
+      const plane = planes[selectedPlane];
+      world.frame++;
+
+      // throttle / speed
+      if (engineOn && keys.w) {
+        world.speed += plane.accel;
+      } else {
+        world.speed -= plane.drag;
+      }
+
+      if (!engineOn) {
+        world.speed -= plane.drag * 0.45;
+      }
+
+      world.speed = Math.max(0, Math.min(plane.maxSpeed, world.speed));
+
+      // turning / roll
+      const turnStrength = (0.35 + world.speed / plane.maxSpeed);
+      if (keys.a) {
+        world.heading -= plane.turnRate * turnStrength;
+        world.roll -= 0.9;
+      }
+      if (keys.d) {
+        world.heading += plane.turnRate * turnStrength;
+        world.roll += 0.9;
+      }
+
+      // altitude control
+      if (keys.q) {
+        world.altitude += plane.climbRate * (0.35 + world.speed / plane.maxSpeed);
+        world.pitch += 1.1;
+      }
+      if (keys.s) {
+        world.altitude -= plane.descendRate * (0.45 + world.speed / plane.maxSpeed);
+        world.pitch -= 1.15;
+      }
+
+      // natural lift if moving fast
+      if (engineOn && world.speed > plane.stall + 1) {
+        world.altitude += plane.lift * world.speed;
+      }
+
+      // glide / fall
+      if (!keys.q && !keys.s) {
+        if (!engineOn) {
+          world.altitude -= plane.glideLoss * (1.2 + Math.max(0, 2 - world.speed * 0.12));
+        } else if (world.speed < plane.stall) {
+          world.altitude -= 1.1;
+        } else {
+          world.altitude -= 0.08;
+        }
+      }
+
+      // stabilize pitch / roll
+      world.pitch *= 0.90;
+      world.roll *= 0.88;
+      world.pitch = Math.max(-20, Math.min(20, world.pitch));
+      world.roll = Math.max(-24, Math.min(24, world.roll));
+
+      // forward movement
+      const headingRad = world.heading * Math.PI / 180;
+      world.xOffset += Math.sin(headingRad) * world.speed * 2.6;
+      world.yOffset += Math.cos(headingRad) * world.speed * 3.1;
+
+      world.altitude = Math.max(0, Math.min(5000, world.altitude));
+
+      if (world.altitude < 170) {
+        warning.style.display = "block";
+      } else {
+        warning.style.display = "none";
+      }
+
+      if (world.altitude <= 0) {
+        crash();
+      }
+
+      updateHUD();
+    }
+
+    function crash() {
+      running = false;
+      engineOn = false;
+      setTimeout(() => {
+        alert("You crashed! Returning to the start screen.");
+        startScreen.classList.remove("hidden");
+        hud.classList.add("hidden");
+        help.classList.add("hidden");
+        crosshair.classList.add("hidden");
+        resetFlight();
+      }, 50);
+    }
+
+    function updateHUD() {
+      hudAircraft.textContent = planes[selectedPlane].name;
+      hudEngine.textContent = engineOn ? "ON" : "OFF";
+      hudEngine.style.color = engineOn ? "#22c55e" : "#f87171";
+      hudSpeed.textContent = world.speed.toFixed(1);
+      hudAltitude.textContent = Math.round(world.altitude) + " ft";
+      hudPitch.textContent = (world.pitch >= 0 ? "+" : "") + world.pitch.toFixed(1) + "°";
+      const heading = ((world.heading % 360) + 360) % 360;
+      hudHeading.textContent = Math.round(heading) + "°";
+    }
+
+    function drawCloud(x, y, size) {
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      const puffs = [
+        [0, 0, size * 0.26],
+        [size * 0.25, 0, size * 0.2],
+        [-size * 0.18, size * 0.04, size * 0.18],
+        [size * 0.08, -size * 0.1, size * 0.22],
+        [size * 0.36, size * 0.04, size * 0.16]
+      ];
+      puffs.forEach(([dx, dy, r]) => {
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawWorld() {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(world.roll * Math.PI / 180);
+      ctx.translate(-w / 2, -h / 2);
+
+      const altitudeFactor = (2400 - world.altitude) / 9000;
+      const horizon = h * (0.48 + altitudeFactor) + world.pitch * 6;
+
+      // sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+      skyGrad.addColorStop(0, "#1d4ed8");
+      skyGrad.addColorStop(0.5, "#60a5fa");
+      skyGrad.addColorStop(1, "#dbeafe");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(-200, -200, w + 400, horizon + 200);
+
+      // sun glow
+      const sunX = w * 0.80;
+      const sunY = h * 0.15;
+      const rg = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, 56);
+      rg.addColorStop(0, "rgba(255,255,240,0.95)");
+      rg.addColorStop(1, "rgba(255,255,220,0)");
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 56, 0, Math.PI * 2);
+      ctx.fill();
+
+      // clouds
+      for (const c of clouds) {
+        let cx = (w / 2) + ((c.x - world.xOffset * 0.14) % (w + 900)) - 450;
+        let cy = c.y + Math.sin(world.frame * 0.01 + c.phase) * 4;
+        drawCloud(cx, cy, c.size);
+      }
+
+      // mountains
+      ctx.fillStyle = "#7c8aa0";
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= 8; i++) {
+        const px = i * (w / 8);
+        const peak = 40 + ((i % 2 === 0) ? 90 : 55) + Math.sin(i + world.yOffset * 0.001) * 10;
+        ctx.lineTo(px, horizon - peak);
+      }
+      ctx.lineTo(w, horizon);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#607089";
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= 10; i++) {
+        const px = i * (w / 10);
+        const peak = 20 + ((i % 2 === 0) ? 55 : 35) + Math.cos(i + world.yOffset * 0.0015) * 8;
+        ctx.lineTo(px, horizon - peak);
+      }
+      ctx.lineTo(w, horizon);
+      ctx.closePath();
+      ctx.fill();
+
+      // ground
+      const groundGrad = ctx.createLinearGradient(0, horizon, 0, h);
+      groundGrad.addColorStop(0, "#c89f6a");
+      groundGrad.addColorStop(0.25, "#9a734a");
+      groundGrad.addColorStop(1, "#4b3825");
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(-200, horizon, w + 400, h - horizon + 200);
+
+      // horizon line
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-100, horizon);
+      ctx.lineTo(w + 100, horizon);
+      ctx.stroke();
+
+      // runway perspective
+      const centerX = w / 2 + Math.sin(world.heading * Math.PI / 180) * 85;
+      const topW = 30;
+      const bottomW = 360;
+
+      ctx.fillStyle = "rgba(40,40,46,0.88)";
+      ctx.beginPath();
+      ctx.moveTo(centerX - topW, horizon);
+      ctx.lineTo(centerX + topW, horizon);
+      ctx.lineTo(w / 2 + bottomW, h);
+      ctx.lineTo(w / 2 - bottomW, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // runway side lines
+      ctx.strokeStyle = "rgba(255,255,255,0.52)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(centerX - topW, horizon);
+      ctx.lineTo(w / 2 - bottomW, h);
+      ctx.moveTo(centerX + topW, horizon);
+      ctx.lineTo(w / 2 + bottomW, h);
+      ctx.stroke();
+
+      // center dashes
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      for (let i = 0; i < 9; i++) {
+        const baseY = horizon + i * ((h - horizon) / 9) + ((world.yOffset * 2.2) % 140);
+        const dashW = 5 + i * 4;
+        const dashH = 14 + i * 7;
+        if (baseY > horizon && baseY < h) {
+          ctx.fillRect(w / 2 - dashW / 2, baseY, dashW, dashH);
+        }
+      }
+
+      // field lines
+      ctx.strokeStyle = "rgba(255,255,255,0.13)";
+      ctx.lineWidth = 1;
+      for (let i = -12; i <= 12; i++) {
+        const offset = i * 95 + ((world.xOffset * 0.65) % 95);
+        ctx.beginPath();
+        ctx.moveTo(centerX, horizon);
+        ctx.lineTo(w / 2 + offset * 5.2, h);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < 18; i++) {
+        const depth = Math.pow(i / 18, 1.7);
+        const y = horizon + depth * (h - horizon) + ((world.yOffset * 0.9) % 75);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawJetModel(x, y, scale) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      ctx.fillStyle = "#e2e8f0";
+      ctx.strokeStyle = "#7dd3fc";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(0, -60);
+      ctx.lineTo(-8, -38);
+      ctx.lineTo(-18, 2);
+      ctx.lineTo(-56, 16);
+      ctx.lineTo(-22, 18);
+      ctx.lineTo(-12, 38);
+      ctx.lineTo(-4, 40);
+      ctx.lineTo(0, 78);
+      ctx.lineTo(4, 78);
+      ctx.lineTo(12, 40);
+      ctx.lineTo(22, 38);
+      ctx.lineTo(32, 18);
+      ctx.lineTo(56, 16);
+      ctx.lineTo(18, 2);
+      ctx.lineTo(8, -38);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // cockpit
+      ctx.fillStyle = "#93c5fd";
+      ctx.beginPath();
+      ctx.ellipse(0, -24, 8, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // tail fins
+      ctx.fillStyle = "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(-8, 48);
+      ctx.lineTo(-2, 24);
+      ctx.lineTo(-16, 34);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(8, 48);
+      ctx.lineTo(2, 24);
+      ctx.lineTo(16, 34);
+      ctx.closePath();
+      ctx.fill();
+
+      // engine glow
+      if (engineOn && world.speed > 0.5) {
+        ctx.fillStyle = "rgba(59,130,246,0.85)";
+        ctx.beginPath();
+        ctx.moveTo(-4, 79);
+        ctx.lineTo(0, 96 + Math.sin(world.frame * 0.7) * 3);
+        ctx.lineTo(4, 79);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawPropModel(x, y, scale) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      ctx.fillStyle = "#fef3c7";
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(0, -56);
+      ctx.lineTo(-7, -36);
+      ctx.lineTo(-17, 0);
+      ctx.lineTo(-70, 10);
+      ctx.lineTo(-20, 16);
+      ctx.lineTo(-10, 38);
+      ctx.lineTo(-4, 42);
+      ctx.lineTo(0, 78);
+      ctx.lineTo(4, 78);
+      ctx.lineTo(10, 42);
+      ctx.lineTo(20, 16);
+      ctx.lineTo(70, 10);
+      ctx.lineTo(17, 0);
+      ctx.lineTo(7, -36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.ellipse(0, -20, 7, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // propeller
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.lineWidth = 3;
+      const spin = world.frame * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(spin) * -18, -62 + Math.sin(spin) * -18);
+      ctx.lineTo(Math.cos(spin) * 18, -62 + Math.sin(spin) * 18);
+      ctx.moveTo(Math.cos(spin + Math.PI / 2) * -18, -62 + Math.sin(spin + Math.PI / 2) * -18);
+      ctx.lineTo(Math.cos(spin + Math.PI / 2) * 18, -62 + Math.sin(spin + Math.PI / 2) * 18);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawGliderModel(x, y, scale) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      ctx.fillStyle = "#dcfce7";
+      ctx.strokeStyle = "#22c55e";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(0, -50);
+      ctx.lineTo(-5, -32);
+      ctx.lineTo(-12, 0);
+      ctx.lineTo(-120, 8);
+      ctx.lineTo(-18, 14);
+      ctx.lineTo(-9, 36);
+      ctx.lineTo(-3, 40);
+      ctx.lineTo(0, 76);
+      ctx.lineTo(3, 76);
+      ctx.lineTo(9, 40);
+      ctx.lineTo(18, 14);
+      ctx.lineTo(120, 8);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(5, -32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.ellipse(0, -18, 7, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawAircraftHUD() {
+      const x = canvas.width / 2;
+      const y = canvas.height * 0.72;
+
+      // central sight lines
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.45)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 56, y, x - 24, y);
+      ctx.moveTo(x + 24, y, x + 56, y);
+      ctx.moveTo(x, y - 14);
+      ctx.lineTo(x, y + 18);
+      ctx.stroke();
+      ctx.restore();
+
+      switch (selectedPlane) {
+        case "jet":
+          drawJetModel(x, y, 1.05);
+          break;
+        case "prop":
+          drawPropModel(x, y, 0.96);
+          break;
+        case "glider":
+          drawGliderModel(x, y, 0.82);
+          break;
+      }
+    }
+
+    function drawAltitudeBar() {
+      const x = canvas.width - 46;
+      const y = 88;
+      const barH = canvas.height - 180;
+
+      ctx.fillStyle = "rgba(0,0,0,0.34)";
+      ctx.fillRect(x, y, 16, barH);
+
+      const pct = Math.max(0, Math.min(1, world.altitude / 5000));
+      const filled = barH * pct;
+
+      const grad = ctx.createLinearGradient(0, y + barH, 0, y);
+      grad.addColorStop(0, "#ef4444");
+      grad.addColorStop(0.35, "#f59e0b");
+      grad.addColorStop(1, "#22c55e");
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y + barH - filled, 16, filled);
+
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.font = "12px Arial";
+      ctx.fillText("ALT", x - 5, y - 10);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawWorld();
+      drawAircraftHUD();
+      drawAltitudeBar();
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    updateHUD();
+    loop();
+    /* ============================================================
+   APPENDED: BETTER MAP OVERLAY (NO CHANGES TO YOUR ORIGINAL)
+ rnd = mulberry32(MAP_CFG.seed);   - Adds roads, rivers, lakes, forests, and city blocks
+
+  // --- Generated map features ---
+  const MAP = {
+    lakes: [],
+    forests: [],
+    buildings: []
+  };
+
+  // Build lakes
+  for (let i = 0; i < MAP_CFG.lakeCount; i++) {
+    MAP.lakes.push({
+      x: Math.floor(rnd() * 24000 - 12000),
+      y: Math.floor(rnd() * 24000 - 12000),
+      r: 480 + rnd() * 950
+    });
+  }
+
+  // Build forests
+  for (let i = 0; i < MAP_CFG.forestCount; i++) {
+    MAP.forests.push({
+      x: Math.floor(rnd() * 26000 - 13000),
+      y: Math.floor(rnd() * 26000 - 13000),
+      rx: 800 + rnd() * 1800,
+      ry: 650 + rnd() * 1600
+    });
+  }
+
+  // Build buildings around city centers
+  MAP_CFG.cityCenters.forEach((c, idx) => {
+    const count = idx === 0 ? 180 : 120;
+    for (let i = 0; i < count; i++) {
+      const ang = rnd() * Math.PI * 2;
+      const rad = Math.sqrt(rnd()) * c.r;
+      const bx = c.x + Math.cos(ang) * rad;
+      const by = c.y + Math.sin(ang) * rad;
+      MAP.buildings.push({
+        x: bx,
+        y: by,
+        w: 55 + rnd() * 70,
+        h: 140 + rnd() * 520,
+        shade: 28 + rnd() * 20,
+        lights: rnd() > 0.55
+      });
+    }
+  });
+
+  // --- Projection: world (wx,wy) -> screen (sx,sy) ---
+  function project(wx, wy, horizon) {
+    // plane/world position (you already move the world using xOffset/yOffset)
+    const px = world.xOffset;
+    const py = world.yOffset;
+
+    // heading vectors (matches your movement math)
+    const hr = world.heading * Math.PI / 180;
+    const fx = Math.sin(hr), fy = Math.cos(hr);     // forward
+    const rx = Math.cos(hr), ry = -Math.sin(hr);    // right
+
+    // relative vector
+    const dx = wx - px;
+    const dy = wy - py;
+
+    // camera space
+    const forward = dx * fx + dy * fy;
+    const right = dx * rx + dy * ry;
+
+    // behind camera
+    if (forward < 120) return null;
+
+    // perspective tuning
+    const focal = 380;
+    const camH = Math.max(26, world.altitude / 38);
+
+    const sx = canvas.width / 2 + (right * focal) / forward;
+    const sy = horizon + (camH * focal) / forward;
+
+    // out of bounds early reject
+    if (sy < horizon - 220 || sy > canvas.height + 280) return null;
+
+    const scale = focal / forward;
+    return { x: sx, y: sy, s: scale, f: forward };
+  }
+
+  function clipToGround(horizon) {
+    // clip all map drawing to below horizon (prevents sky scribbles)
+    ctx.beginPath();
+    ctx.rect(-200, horizon, canvas.width + 400, canvas.height - horizon + 260);
+    ctx.clip();
+  }
+
+  // Draw polyline with perspective width
+  function drawPolyline(points, horizon, color, baseWidth, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    let started = false;
+    ctx.beginPath();
+
+    let midProj = null;
+    const mid = points[(points.length / 2) | 0];
+
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const pr = project(p.x, p.y, horizon);
+      if (!pr) continue;
+      if (!started) {
+        ctx.moveTo(pr.x, pr.y);
+        started = true;
+      } else {
+        ctx.lineTo(pr.x, pr.y);
+      }
+      if (!midProj && p === mid) midProj = pr;
+    }
+
+    if (started) {
+      const w = midProj ? Math.max(1, baseWidth * midProj.s) : 1;
+      ctx.lineWidth = w;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawRoads(horizon) {
+    const px = world.xOffset;
+    const py = world.yOffset;
+    const spacing = MAP_CFG.roadSpacing;
+    const range = MAP_CFG.roadRange;
+
+    // vertical roads (x const)
+    const baseX = Math.round(px / spacing) * spacing;
+    for (let ix = -6; ix <= 6; ix++) {
+      const x = baseX + ix * spacing;
+      const pts = [];
+      for (let t = -range; t <= range; t += 520) pts.push({ x, y: py + t });
+      drawPolyline(pts, horizon, "rgba(225,225,225,0.20)", 18, 1);
+    }
+
+    // horizontal roads (y const)
+    const baseY = Math.round(py / spacing) * spacing;
+    for (let iy = -6; iy <= 6; iy++) {
+      const y = baseY + iy * spacing;
+      const pts = [];
+      for (let t = -range; t <= range; t += 520) pts.push({ x: px + t, y });
+      drawPolyline(pts, horizon, "rgba(225,225,225,0.16)", 16, 1);
+    }
+
+    // diagonal highway
+    const pts = [];
+    const b = 2200; // intercept
+    for (let t = -range; t <= range; t += 640) {
+      const x = px + t;
+      const y = 0.72 * x + b;
+      pts.push({ x, y });
+    }
+    drawPolyline(pts, horizon, "rgba(245,245,245,0.22)", 26, 1);
+  }
+
+  function drawRiver(horizon) {
+    const px = world.xOffset;
+    const py = world.yOffset;
+    const range = MAP_CFG.riverRange;
+
+    const pts = [];
+    for (let t = -range; t <= range; t += 360) {
+      const x = px + t;
+      const y =
+        py +
+        Math.sin((x + MAP_CFG.seed) * 0.00072) * 2400 +
+        Math.cos((x - MAP_CFG.seed) * 0.00036) * 900;
+      pts.push({ x, y });
+    }
+
+    // wide river base + inner brighter line
+    drawPolyline(pts, horizon, "rgba(46,160,255,0.22)", 75, 1);
+    drawPolyline(pts, horizon, "rgba(46,160,255,0.48)", 30, 1);
+  }
+
+  function drawLakes(horizon) {
+    ctx.save();
+    ctx.fillStyle = "rgba(46,160,255,0.20)";
+    for (const l of MAP.lakes) {
+      // draw lake as projected polygon
+      let started = false;
+      ctx.beginPath();
+      const steps = 18;
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * Math.PI * 2;
+        const wx = l.x + Math.cos(a) * l.r;
+        const wy = l.y + Math.sin(a) * l.r;
+        const p = project(wx, wy, horizon);
+        if (!p) continue;
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      if (started) ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawForests(horizon) {
+    ctx.save();
+    ctx.fillStyle = "rgba(12,85,48,0.20)";
+    for (const f of MAP.forests) {
+      let started = false;
+      ctx.beginPath();
+      const steps = 14;
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * Math.PI * 2;
+        const rr = 0.75 + (rnd() * 0.55);
+        const wx = f.x + Math.cos(a) * f.rx * rr;
+        const wy = f.y + Math.sin(a) * f.ry * rr;
+        const p = project(wx, wy, horizon);
+        if (!p) continue;
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      if (started) ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawBuildings(horizon) {
+    // Far->near sort for proper overlap
+    const visible = [];
+    for (const b of MAP.buildings) {
+      const p = project(b.x, b.y, horizon);
+      if (!p) continue;
+      if (p.s < 0.010) continue;
+      visible.push({ b, p });
+    }
+    visible.sort((a, b) => a.p.f - b.p.f);
+
+    for (const it of visible) {
+      const b = it.b;
+      const p = it.p;
+
+      const bw = Math.max(1, b.w * p.s);
+      const bh = Math.max(2, b.h * p.s);
+
+      ctx.fillStyle = "rgba(55,60,72,0.34)";
+      ctx.fillRect(p.x - bw/2, p.y - bh, bw, bh);
+
+      // faint roof highlight
+      ctx.fillStyle = "rgba(255,255,255,0.05)";
+      ctx.fillRect(p.x - bw/2, p.y - bh, bw, Math.max(1, 2 * p.s));
+
+      // optional lights (subtle, doesn't require a full day/night system)
+      if (b.lights) {
+        ctx.fillStyle = "rgba(255,220,160,0.18)";
+        ctx.fillRect(p.x - bw/2 + 2*p.s, p.y - bh + 6*p.s, bw - 4*p.s, 5*p.s);
+      }
+    }
+  }
+
+  function drawBetterMap(horizon) {
+    drawRoads(horizon);
+    drawRiver(horizon);
+    drawLakes(horizon);
+    drawForests(horizon);
+    drawBuildings(horizon);
+  }
+
+  // ============================================================
+  // WRAP YOUR EXISTING render() WITHOUT EDITING IT
+  // ============================================================
+  const _render = render;
+
+  render = function () {
+    // run your original render unchanged
+    _render();
+
+    // recompute the same horizon your drawWorld uses (safe)
+    const h = canvas.height;
+    const altitudeFactor = (2400 - world.altitude) / 9000;
+    const horizon = h * (0.48 + altitudeFactor) + world.pitch * 6;
+
+    // draw overlay in SAME roll orientation as your world
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(world.roll * Math.PI / 180);
+    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+    // clip to ground region
+    clipToGround(horizon);
+
+    // draw map features
+    drawBetterMap(horizon);
+
+    ctx.restore();
+  };
+})();
+   - Drawn AFTER your existing render() so your original stays intact
+   ============================================================ */
+(function () {
+  // --- Config ---
+  const MAP_CFG = {
+    seed: 1337,
+    roadSpacing: 1200,
+    roadRange: 14000,
+    riverRange: 18000,
+    cityCenters: [
+      { x: 3800, y: 5200, r: 1400 },
+      { x: -4200, y: 8600, r: 1100 }
+    ],
+    lakeCount: 7,
+    forestCount: 14
+  };
+
+  // --- PRNG for deterministic map ---
+  function mulberry32(a) {
+    return function () {
+      let t = (a += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+})
+  </script>
+</body>
+</html>
